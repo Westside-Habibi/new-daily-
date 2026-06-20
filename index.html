@@ -90,10 +90,46 @@
   }
   .day-cell.done { background:linear-gradient(135deg,#7b4fd9,#ff5fa2); color:#fff; border:none; }
   .day-cell.today { box-shadow:0 0 0 2px #ff5fa2; color:#fff; }
+  .day-cell.tappable { cursor:pointer; }
+  .day-cell.future { opacity:0.35; }
 
   .reset-row { text-align:center; margin-top:6px; }
   .reset-btn { background:none; border:none; color:#6b5e8c; font-size:12px; text-decoration:underline; }
   footer { text-align:center; margin-top:18px; color:#52456f; font-size:11px; }
+
+  @keyframes pulseGlow {
+    0% { box-shadow:0 0 0 0 rgba(255,95,162,0.55); }
+    60% { box-shadow:0 0 0 16px rgba(255,95,162,0); }
+    100% { box-shadow:0 0 0 0 rgba(255,95,162,0); }
+  }
+  .progress-card.pulse { animation: pulseGlow 0.9s ease-out; }
+
+  .confetti {
+    position:fixed; top:-10px; width:8px; height:14px; border-radius:2px;
+    opacity:0.95; pointer-events:none; z-index:999;
+    animation-name: confettiFall; animation-timing-function: ease-in; animation-fill-mode:forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) translateX(0) rotate(0deg); opacity:1; }
+    100% { transform: translateY(80vh) translateX(calc(var(--dx,0) * 60px)) rotate(540deg); opacity:0; }
+  }
+
+  .milestone-banner {
+    position:fixed; top:38%; left:50%; transform:translate(-50%,-50%) scale(0.6);
+    background:linear-gradient(135deg,#7b4fd9,#ff5fa2);
+    color:#fff; font-weight:800; font-size:18px; letter-spacing:0.5px;
+    padding:14px 22px; border-radius:16px; z-index:1000;
+    box-shadow:0 12px 36px rgba(123,79,217,0.5);
+    animation: bannerPop 2.2s ease forwards;
+    white-space:nowrap;
+  }
+  @keyframes bannerPop {
+    0% { opacity:0; transform:translate(-50%,-50%) scale(0.5); }
+    15% { opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+    25% { transform:translate(-50%,-50%) scale(1); }
+    85% { opacity:1; }
+    100% { opacity:0; transform:translate(-50%,-60%) scale(0.95); }
+  }
 </style>
 </head>
 <body>
@@ -133,7 +169,7 @@
   <button class="check-btn" id="checkBtn">Mark Today Said ✓</button>
 
   <div class="grid-card">
-    <h2>28 Day Grid</h2>
+    <h2>28 Day Grid <span style="text-transform:none;letter-spacing:0;color:#6b5e8c;">· tap a day to toggle</span></h2>
     <div class="grid" id="grid"></div>
   </div>
 
@@ -192,13 +228,15 @@
     if (diff > 27) diff = 27;
     return diff;
   }
+  // If any day before today in this cycle was never marked, the streak is broken: restart the cycle.
   function checkForMissedDay(){
     var raw = rawDayIndex();
-    if (raw <= 0) return;
+    if (raw <= 0) return; // still day 1, nothing to check yet
     var lastIdxToCheck = Math.min(raw - 1, 27);
     for (var i = 0; i <= lastIdxToCheck; i++) {
       var key = dateForIndex(i);
       if (!data.days[key]) {
+        // missed day i — wipe the cycle and start over today
         var restarts = (data.restarts || 0) + 1;
         data = freshCycle(restarts);
         justReset = true;
@@ -206,6 +244,7 @@
         return;
       }
     }
+    // if the whole 28 was completed and a new day has rolled around, also start a fresh cycle (keeps grid usable)
     if (raw > 27) {
       data = freshCycle(data.restarts || 0);
       save();
@@ -251,19 +290,86 @@
 
     grid.innerHTML = '';
     for (var i = 0; i < 28; i++) {
+      (function(idx){
+        var key = dateForIndex(idx);
+        var cell = document.createElement('div');
+        var isFuture = idx > todayIdx;
+        var classes = 'day-cell' + (data.days[key] ? ' done' : '') + (idx === todayIdx ? ' today' : '');
+        classes += isFuture ? ' future' : ' tappable';
+        cell.className = classes;
+        cell.textContent = data.days[key] ? '✓' : (idx+1);
+        if (!isFuture) {
+          cell.addEventListener('click', function(){
+            var turningOn = !data.days[key];
+            data.days[key] = turningOn;
+            save();
+            render();
+            if (turningOn) celebrate(idx === todayIdx);
+          });
+        }
+        grid.appendChild(cell);
+      })(i);
+    }
+  }
+
+  // ---- Celebration animations ----
+  function celebrate(isToday){
+    pulseCard();
+    var streak = currentRunningStreak();
+    var milestones = [7, 14, 21, 28];
+    if (milestones.indexOf(streak) !== -1) {
+      burstConfetti(streak);
+    } else {
+      burstConfetti(0);
+    }
+  }
+  function currentRunningStreak(){
+    // count consecutive done days ending at today (or the latest done day)
+    var idx = currentDayIndex();
+    var streak = 0;
+    for (var i = idx; i >= 0; i--) {
       var key = dateForIndex(i);
-      var cell = document.createElement('div');
-      cell.className = 'day-cell' + (data.days[key] ? ' done' : '') + (i === todayIdx ? ' today' : '');
-      cell.textContent = data.days[key] ? '✓' : (i+1);
-      grid.appendChild(cell);
+      if (data.days[key]) streak++;
+      else break;
+    }
+    return streak;
+  }
+  function pulseCard(){
+    var card = document.querySelector('.progress-card');
+    card.classList.remove('pulse');
+    void card.offsetWidth; // restart animation
+    card.classList.add('pulse');
+  }
+  function burstConfetti(milestone){
+    var colors = ['#ff5fa2', '#d9c8ff', '#7b4fd9', '#ffd166', '#ffffff'];
+    var count = milestone ? 36 : 16;
+    for (var i = 0; i < count; i++) {
+      var piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = (45 + Math.random()*10) + 'vw';
+      piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+      piece.style.setProperty('--dx', (Math.random()*2-1).toFixed(2));
+      piece.style.animationDuration = (1.1 + Math.random()*0.9) + 's';
+      piece.style.animationDelay = (Math.random()*0.15) + 's';
+      document.body.appendChild(piece);
+      (function(p){ setTimeout(function(){ p.remove(); }, 2200); })(piece);
+    }
+    if (milestone) {
+      var banner = document.createElement('div');
+      banner.className = 'milestone-banner';
+      banner.textContent = milestone + ' DAY STREAK 🔥';
+      document.body.appendChild(banner);
+      setTimeout(function(){ banner.remove(); }, 2200);
     }
   }
 
   checkBtn.addEventListener('click', function(){
     var todayKey = todayStr();
-    data.days[todayKey] = !data.days[todayKey];
+    var turningOn = !data.days[todayKey];
+    data.days[todayKey] = turningOn;
     save();
     render();
+    if (turningOn) celebrate(true);
   });
 
   resetBtn.addEventListener('click', function(){
@@ -298,6 +404,8 @@
   checkForMissedDay();
   render();
 
+  // Force a flush to disk on every possible "app is going away" signal —
+  // mitigates iOS killing the standalone process before localStorage syncs.
   document.addEventListener('visibilitychange', function(){
     if (document.visibilityState === 'hidden') save();
   });
