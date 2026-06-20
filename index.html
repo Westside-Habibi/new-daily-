@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="28 Days">
+<title>28 Days · Mni Wichoni</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    background: radial-gradient(circle at 50% 0%, #1a1033 0%, #0a0612 55%, #050308 100%);
+    color:#f1ecff;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding: env(safe-area-inset-top) 18px calc(env(safe-area-inset-bottom) + 24px) 18px;
+    overflow-x:hidden;
+  }
+  .wrap { max-width:480px; margin:0 auto; padding-top:18px; }
+  header { text-align:center; margin-bottom:18px; }
+  header .glyph { font-size:30px; }
+  h1 { font-size:20px; font-weight:700; letter-spacing:0.5px; margin-top:6px; }
+  header p { color:#a89bd1; font-size:12px; margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
+
+  .progress-card {
+    background:linear-gradient(145deg, rgba(123,79,217,0.18), rgba(123,79,217,0.04));
+    border:1px solid rgba(168,140,255,0.25);
+    border-radius:20px;
+    padding:18px;
+    margin-bottom:16px;
+    backdrop-filter: blur(10px);
+  }
+  .progress-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .progress-top .day { font-size:28px; font-weight:800; background:linear-gradient(90deg,#d9c8ff,#ff8fd0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .progress-top .streak { font-size:12px; color:#c9b8ff; }
+  .bar-bg { background:rgba(255,255,255,0.08); border-radius:10px; height:10px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,#7b4fd9,#ff5fa2); transition:width .4s ease; }
+  .progress-sub { margin-top:8px; font-size:11px; color:#8d7fb3; text-align:right; }
+
+  .mantra-card {
+    background: rgba(255,255,255,0.04);
+    border:1px solid rgba(168,140,255,0.18);
+    border-radius:20px;
+    padding:22px 18px;
+    margin-bottom:16px;
+    text-align:center;
+  }
+  .mantra-line { font-size:17px; line-height:1.85; font-weight:600; }
+  .mantra-line.dim { color:#cfc3ef; font-weight:500; font-size:15px; }
+  .mantra-line.big { font-size:19px; }
+  .heart { color:#ff5fa2; }
+
+  .check-btn {
+    width:100%;
+    border:none;
+    border-radius:18px;
+    padding:18px;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.3px;
+    margin-bottom:14px;
+    color:#fff;
+    background:linear-gradient(135deg,#7b4fd9,#ff5fa2);
+    box-shadow:0 8px 24px rgba(123,79,217,0.35);
+    transition:transform .12s ease, opacity .2s ease;
+  }
+  .check-btn:active { transform:scale(0.97); }
+  .check-btn.done {
+    background:rgba(255,255,255,0.06);
+    color:#a89bd1;
+    box-shadow:none;
+    border:1px solid rgba(168,140,255,0.25);
+  }
+
+  .grid-card {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(168,140,255,0.12);
+    border-radius:18px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .grid-card h2 { font-size:12px; color:#a89bd1; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+  .day-cell {
+    aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:600; color:#6b5e8c;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.05);
+  }
+  .day-cell.done { background:linear-gradient(135deg,#7b4fd9,#ff5fa2); color:#fff; border:none; }
+  .day-cell.today { box-shadow:0 0 0 2px #ff5fa2; color:#fff; }
+
+  .reset-row { text-align:center; margin-top:6px; }
+  .reset-btn { background:none; border:none; color:#6b5e8c; font-size:12px; text-decoration:underline; }
+  footer { text-align:center; margin-top:18px; color:#52456f; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="glyph">💧🔥</div>
+    <h1>Mni Wichoni — Water Is Life</h1>
+    <p>28 days · fill your sorrow with love</p>
+  </header>
+
+  <div class="progress-card">
+    <div class="progress-top">
+      <div><span class="day" id="dayCount">0</span><span style="font-size:14px;color:#cfc3ef;"> / 28</span></div>
+      <div class="streak" id="streakText">0 restarts</div>
+    </div>
+    <div class="bar-bg"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+    <div class="progress-sub" id="progressSub">Start today</div>
+  </div>
+
+  <div class="mantra-card">
+    <div class="mantra-line">Mni Wichoni — Water is Life</div>
+    <div class="mantra-line">I Am of Water &amp; Fire</div>
+    <div class="mantra-line">I am in the Light</div>
+    <br>
+    <div class="mantra-line big">I L<span class="heart">♥</span>VE MySelf</div>
+    <div class="mantra-line big">I Love myself</div>
+    <div class="mantra-line big">I Love Myself</div>
+    <div class="mantra-line big">I Love Myself</div>
+    <div class="mantra-line big">I L<span class="heart">♥</span>VE myself</div>
+    <br>
+    <div class="mantra-line">I Have Life</div>
+    <br>
+    <div class="mantra-line dim">I have the power of Laughter</div>
+    <div class="mantra-line dim">( laughter washes away sadness and anger )</div>
+  </div>
+
+  <button class="check-btn" id="checkBtn">Mark Today Said ✓</button>
+
+  <div class="grid-card">
+    <h2>28 Day Grid</h2>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="reset-row">
+    <button class="reset-btn" id="resetBtn">Reset journey</button>
+    &nbsp;·&nbsp;
+    <button class="reset-btn" id="backupBtn">Backup code</button>
+    &nbsp;·&nbsp;
+    <button class="reset-btn" id="restoreBtn">Restore code</button>
+  </div>
+
+  <footer>Say it. Mean it. Let it land. 💜</footer>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'affirm28_v2';
+  var data = load();
+  var justReset = false;
+
+  function freshCycle(restarts){
+    return { cycleStart: todayStr(), days: {}, restarts: restarts || 0 };
+  }
+  function load(){
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed.cycleStart) return parsed;
+      }
+    } catch(e){}
+    return freshCycle(0);
+  }
+  function save(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+  }
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  }
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+  function dateForIndex(idx){
+    var start = new Date(data.cycleStart + 'T00:00:00');
+    var d = new Date(start.getTime() + idx*86400000);
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  }
+  function rawDayIndex(){
+    var start = new Date(data.cycleStart + 'T00:00:00');
+    var now = new Date();
+    var nowMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((nowMid - start) / 86400000);
+  }
+  function currentDayIndex(){
+    var diff = rawDayIndex();
+    if (diff < 0) diff = 0;
+    if (diff > 27) diff = 27;
+    return diff;
+  }
+  function checkForMissedDay(){
+    var raw = rawDayIndex();
+    if (raw <= 0) return;
+    var lastIdxToCheck = Math.min(raw - 1, 27);
+    for (var i = 0; i <= lastIdxToCheck; i++) {
+      var key = dateForIndex(i);
+      if (!data.days[key]) {
+        var restarts = (data.restarts || 0) + 1;
+        data = freshCycle(restarts);
+        justReset = true;
+        save();
+        return;
+      }
+    }
+    if (raw > 27) {
+      data = freshCycle(data.restarts || 0);
+      save();
+    }
+  }
+
+  var checkBtn = document.getElementById('checkBtn');
+  var grid = document.getElementById('grid');
+  var dayCount = document.getElementById('dayCount');
+  var barFill = document.getElementById('barFill');
+  var streakText = document.getElementById('streakText');
+  var progressSub = document.getElementById('progressSub');
+  var resetBtn = document.getElementById('resetBtn');
+  var backupBtn = document.getElementById('backupBtn');
+  var restoreBtn = document.getElementById('restoreBtn');
+
+  function completedCount(){
+    var c = 0;
+    for (var k in data.days) if (data.days[k]) c++;
+    return c;
+  }
+
+  function render(){
+    var todayKey = todayStr();
+    var doneToday = !!data.days[todayKey];
+    var total = completedCount();
+    var todayIdx = currentDayIndex();
+
+    dayCount.textContent = total;
+    barFill.style.width = Math.min(100, (total/28)*100) + '%';
+    streakText.textContent = (data.restarts || 0) + ' restart' + (data.restarts === 1 ? '' : 's');
+
+    if (justReset) {
+      progressSub.textContent = 'Day missed — back to Day 1';
+    } else if (total >= 28) {
+      progressSub.textContent = 'Journey complete 💜';
+    } else {
+      progressSub.textContent = (28 - total) + ' days to go';
+    }
+
+    checkBtn.textContent = doneToday ? 'Said Today ✓' : 'Mark Today Said ✓';
+    checkBtn.className = doneToday ? 'check-btn done' : 'check-btn';
+
+    grid.innerHTML = '';
+    for (var i = 0; i < 28; i++) {
+      var key = dateForIndex(i);
+      var cell = document.createElement('div');
+      cell.className = 'day-cell' + (data.days[key] ? ' done' : '') + (i === todayIdx ? ' today' : '');
+      cell.textContent = data.days[key] ? '✓' : (i+1);
+      grid.appendChild(cell);
+    }
+  }
+
+  checkBtn.addEventListener('click', function(){
+    var todayKey = todayStr();
+    data.days[todayKey] = !data.days[todayKey];
+    save();
+    render();
+  });
+
+  resetBtn.addEventListener('click', function(){
+    if (confirm('Restart your 28-day journey now? This clears today\'s cycle but keeps your restart count.')) {
+      data = freshCycle(data.restarts || 0);
+      save();
+      render();
+    }
+  });
+
+  backupBtn.addEventListener('click', function(){
+    var code = btoa(JSON.stringify(data));
+    window.prompt('Copy this code and save it somewhere safe (Notes app, etc). Paste it back via "Restore code" if progress is ever lost:', code);
+  });
+
+  restoreBtn.addEventListener('click', function(){
+    var code = window.prompt('Paste your backup code here:');
+    if (!code) return;
+    try {
+      var parsed = JSON.parse(atob(code.trim()));
+      if (!parsed.cycleStart || !parsed.days) throw new Error('bad code');
+      data = parsed;
+      save();
+      justReset = false;
+      render();
+      alert('Progress restored.');
+    } catch(e) {
+      alert('That code didn\'t look right — nothing was changed.');
+    }
+  });
+
+  checkForMissedDay();
+  render();
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'hidden') save();
+  });
+  window.addEventListener('pagehide', save);
+  window.addEventListener('blur', save);
+})();
+</script>
+</body>
+</html>
